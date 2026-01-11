@@ -81,6 +81,8 @@ class Scanner {
                 if (match('/')) {
                     // Comments go until End of Line
                     while (peek() != '\n' && !isAtEnd()) advance();
+                } else if (match('*')) {
+                    blockComment();
                 } else {
                     addToken(SLASH);
                 }
@@ -110,6 +112,37 @@ class Scanner {
         }
     }
 
+    private void blockComment() {
+
+        while (!isAtEnd()) {
+            char c = advance();
+
+            if (c == '\n') {
+                line++;
+                continue;
+            }   
+
+            // nesting the blocks 
+            if (c == '/' && match('*')) {
+                blockComment();
+                // Stop immediately if the child failed due to EOF
+                if (isAtEnd()) return;
+            }
+
+            // end of comment at */
+            if (c == '*' && peek() == '/') {
+                // consume the '/'
+                advance();
+                return;
+            }
+        }
+
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated Block Comment");
+            return;
+        }
+    }
+
     private void identifier() {
         while (isAlphaNumeric(peek())) advance();
 
@@ -118,6 +151,7 @@ class Scanner {
         if (type == null) type = IDENTIFIER;
         addToken(type);
     }
+
     private void number() {
         while (isDigit(peek())) advance();
 
